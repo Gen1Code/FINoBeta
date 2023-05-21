@@ -41,7 +41,7 @@ var update_divisor = true;
 var q1, t, m, n;
 var q2A, q2B, q2C, q2D;
 var kA, kB, kC;
-var q1Exp, UnlTerm, fxUpg, baseUpg;
+var intUnlock, kUnlock, q1Exp, UnlTerm, fxUpg, baseUpg;
 
 var popup = ui.createPopup({
     title: "f(x) Milestone",
@@ -183,7 +183,6 @@ var init = () => {
             popup.show();
         }
         perm1.maxLevel = 3;
-    
     }
 
     {
@@ -198,16 +197,32 @@ var init = () => {
     /////////////////////
     // Checkpoint Upgrades
     theory.setMilestoneCost(new CustomCost(total => BigNumber.from(getMilCustomCost(total))));
+    
+    {
+        intUnlock =  theory.createMilestoneUpgrade(0,1);
+        intUnlock.getDescription = (_) => {return "$\\text{Unlock Fractional Integral}$";}
+        intUnlock.getInfo = (_) => {return "$\\text{Unlock Fractional Integral}$";}
+        intUnlock.boughtOrRefunded = (_) => {updateAvailability();theory.invalidatePrimaryEquation();}
+        intUnlock.canBeRefunded = (_) => kUnlock.level == 0;
+    }
 
     {
-        q1Exp = theory.createMilestoneUpgrade(0, 3);
+        kUnlock = theory.createMilestoneUpgrade(1,1);
+        kUnlock.getDescription = (_) => {return Localization.getUpgradeAddTermDesc("k");}
+        kUnlock.getInfo = (_) => {return Localization.getUpgradeAddTermInfo("k");}
+        kUnlock.boughtOrRefunded = (_) => {updateAvailability();theory.invalidateSecondaryEquation();}
+        kUnlock.canBeRefunded = (_) => q1Exp.level == 0 && UnlTerm.level == 0 && fxUpg.level == 0 && baseUpg.level == 0;
+    }
+
+    {
+        q1Exp = theory.createMilestoneUpgrade(2, 3);
         q1Exp.description = Localization.getUpgradeIncCustomExpDesc("q_1", "0.01");
         q1Exp.info = Localization.getUpgradeIncCustomExpInfo("q_1", "0.01");
         q1Exp.boughtOrRefunded = (_) => {theory.invalidateSecondaryEquation();updateAvailability();};
     }
 
     {
-        UnlTerm = theory.createMilestoneUpgrade(1, 2);
+        UnlTerm = theory.createMilestoneUpgrade(3, 2);
         UnlTerm.getDescription = (_) => {
             if(UnlTerm.level == 0) {
                 return Localization.getUpgradeAddTermDesc("m");
@@ -224,7 +239,7 @@ var init = () => {
     }
 
     {
-        fxUpg = theory.createMilestoneUpgrade(2, 1);
+        fxUpg = theory.createMilestoneUpgrade(4, 1);
         fxUpg.getDescription = (_) => {
             if (fxUpg.level == 0){
                 return "$\\text{Approximate }\\sin(x) \\text{ to 3 terms}$";
@@ -256,7 +271,7 @@ var init = () => {
     }
 
     {
-        baseUpg = theory.createMilestoneUpgrade(3, 1);
+        baseUpg = theory.createMilestoneUpgrade(5, 1);
         baseUpg.getDescription = (_) => {
             if(baseUpg.level == 0){
                 return "$\\text{Improve } \\lambda \\text{ Fraction to } 2/3^{i}$";
@@ -347,8 +362,12 @@ var init = () => {
 }
 
 var updateAvailability = () => {
+    kUnlock.isAvailable = intUnlock.level == 1;
+    q1Exp.isAvailable = kUnlock.level == 1;
+    UnlTerm.isAvailable = kUnlock.level == 1;
     fxUpg.isAvailable = perm1.level > 0;
     baseUpg.isAvailable = perm2.level > 0;
+    perm2.isAvailable = kUnlock.level == 1;
     fxUpg.maxLevel = 0 + perm1.level;
     baseUpg.maxLevel = 0 + perm2.level;
 
@@ -357,9 +376,9 @@ var updateAvailability = () => {
     q2C.isAvailable = fxUpg.level == 2;
     q2D.isAvailable = fxUpg.level == 3;
 
-    kA.isAvailable = baseUpg.level == 0;
-    kB.isAvailable = baseUpg.level == 1;
-    kC.isAvailable = baseUpg.level == 2;
+    kA.isAvailable = baseUpg.level == 0 && kUnlock.level == 1;
+    kB.isAvailable = baseUpg.level == 1 && kUnlock.level == 1;
+    kC.isAvailable = baseUpg.level == 2 && kUnlock.level == 1;
 
     m.isAvailable = UnlTerm.level > 0;
     n.isAvailable = UnlTerm.level > 1;
@@ -389,7 +408,11 @@ var tick = (elapsedTime, multiplier) => {
     q += vq1 * vq2 * dt;
     if (q1.level > 0) r += vapp * dt;
     
-    rho_dot = vm * vn * t_cumulative * norm_int(q/(fxUpg.level < 3 ? BigNumber.PI : BigNumber.ONE)).pow(BigNumber.ONE/BigNumber.PI) * r;
+    if(intUnlock.level == 0){
+        rho_dot = vm * vn * t_cumulative * r * (q/BigNumber.PI).pow(BigNumber.ONE/BigNumber.PI);
+    }else{
+        rho_dot = vm * vn * t_cumulative * norm_int(q/(fxUpg.level < 3 ? BigNumber.PI : BigNumber.ONE)).pow(BigNumber.ONE/BigNumber.PI) * r;
+    }
     currency.value += bonus * rho_dot * dt;
 
     theory.invalidateTertiaryEquation();
@@ -424,25 +447,29 @@ var KCosts = [KCost1,KCost2,KCost3];
 
 //Milestone Cost
 var getMilCustomCost = (level) => {
-    //20,70,210,300,425,530,700,800,950,1150
+    //10,20,30,70,210,300,425,530,700,800,950,1150
     switch(level){
         case 0:
-            return 2;
+            return 1;
         case 1:
-            return 7;
+            return 2;
         case 2:
-            return 21;
+            return 3;
         case 3:
-            return 30;
+            return 7;
         case 4:
-            return 42.5;
+            return 21;
         case 5:
-            return 53;
+            return 30;
         case 6:
-            return 70;
+            return 42.5;
         case 7:
-            return 80;
+            return 53;
         case 8:
+            return 70;
+        case 9:
+            return 80;
+        case 10:
             return 95;
     }
     return 115;
@@ -468,13 +495,15 @@ var getPrimaryEquation = () => {
     result += "\\dot{\\rho}=tr";
     if(UnlTerm.level > 0) result +="m";
     if(UnlTerm.level > 1) result +="n";
-    result += "\\sqrt[\\pi]{\\int_{0}^{";
+    result += "\\sqrt[\\pi]{";
+    if(intUnlock.level == 1) result += "\\int_{0}^{";
     if(fxUpg.level<3){
         result += "q/\\pi"
     }else{
         result += "q";
     }
-    result += "}f(x)dx}\\\\\\\\";
+    if(intUnlock.level == 1) result += "}f(x)dx";
+    result += "}\\\\\\\\";
     result += "\\dot{r}=(\\int_{0}^{\\pi}f(x)dx - _{\\lambda}\\int_{0}^{\\pi}f(x)dx^{\\lambda})^{-1}";
     result += "\\end{matrix}";
     return result;
@@ -486,8 +515,13 @@ var getSecondaryEquation = () => {
     let result = "";
     result += "&f(x) = ";
     result += fx_latex();
-    result += ",\\quad\\lambda = \\sum_{i=1}^{K}\\frac{"+(lambda_base-1).toString(0)+"}{"+lambda_base.toString(0)+"^{i}}\\\\\\\\";
-    result += "&\\quad\\qquad\\qquad\\dot{q}=q_1"
+    result += ",\\quad\\lambda = ";
+    if (kUnlock.level == 0){
+        result += "\\frac{1}{2}";
+    }else{
+        result += "\\sum_{i=1}^{K}\\frac{"+(lambda_base-1).toString(0)+"}{"+lambda_base.toString(0)+"^{i}}";
+    }
+    result += "\\\\\\\\&\\quad\\qquad\\qquad\\dot{q}=q_1";
     if (q1Exp.level > 0) result += `^{${1+q1Exp.level*0.01}}`;
     result += "q_2\\quad"+theory.latexSymbol + "=\\max\\rho^{0.1}";
     result += ""
