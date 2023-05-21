@@ -5,7 +5,7 @@ import { theory } from "./api/Theory";
 import { Utils } from "./api/Utils";
 
 var id = "fractional_integration_no_beta";
-var name = "Fractional Integration";
+var name = "Fractional Integration NO Beta";
 var description = "The functions between a function and its derivative have many ways of being shown, this is one of them."+
                     "Fractional integration is a way to calculate what is between a function and its integral and is a smooth transition."+
                     "As such, as a fractional integral approaches 1, it should become the integral.";
