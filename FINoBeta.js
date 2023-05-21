@@ -4,7 +4,7 @@ import { parseBigNumber, BigNumber } from "./api/BigNumber";
 import { theory } from "./api/Theory";
 import { Utils } from "./api/Utils";
 
-var id = "fractional_integration";
+var id = "fractional_integration_no_beta";
 var name = "Fractional Integration";
 var description = "The functions between a function and its derivative have many ways of being shown, this is one of them."+
                     "Fractional integration is a way to calculate what is between a function and its integral and is a smooth transition."+
@@ -457,8 +457,6 @@ var postPublish = () => {
     kA.level = 1;
     kB.level = 1;
     kC.level = 1;
-
-
     n.level = 1;
     updateAvailability();
 }
