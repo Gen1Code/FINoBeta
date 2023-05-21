@@ -454,7 +454,11 @@ var postPublish = () => {
     q = BigNumber.ZERO;
     r = BigNumber.ZERO;
     update_divisor = true;
-    k.level = 1;
+    kA.level = 1;
+    kB.level = 1;
+    kC.level = 1;
+
+
     n.level = 1;
     updateAvailability();
 }
@@ -497,8 +501,8 @@ var getTertiaryEquation = () => {
     let result = "";
     result += "\\begin{matrix}";
     result += "& 1-\\lambda =";
-    if(getK(k.level) < 8 && 1/lambda_base.pow(getK(k.level))>0.001){
-        result += (1/lambda_base.pow(getK(k.level))).toString(4);
+    if(getK(Math.max(kA.level,kB.level,kC.level)) < 8 && 1/lambda_base.pow(getK(Math.max(kA.level,kB.level,kC.level)))>0.001){
+        result += (1/lambda_base.pow(getK(Math.max(kA.level,kB.level,kC.level)))).toString(4);
     }else{
         result += lambda_man.toString(3)+"e"+lambda_exp.toString();
     }
